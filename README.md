@@ -23,7 +23,16 @@ We will deploy ODH using the Operator.
 
 Login to the cluster using the console and admin credentials.
 
+Navigate to OperatorHub and search for `Open Data Hub Operator`.  Install using the `beta` channel.  The version installed in this guide is `0.9`.
+
+![ODH Install](images/odh_install.png)
+
 
 
 ## Troubleshooting
 
+1.  If you delete the ODH operator and need to reinstall again, you have to make sure the operator group has been deleted.  Otherwise the next install will move into a stuck `Pending` state.
+
+```
+oc delete operatorgroup opendatahub -n openshift-operators
+```
