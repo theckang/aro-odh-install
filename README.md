@@ -27,7 +27,72 @@ Navigate to OperatorHub and search for `Open Data Hub Operator`.  Install using 
 
 ![ODH Install](images/odh_install.png)
 
+Under the install operators, you should see the status of the operator change to `Succeeded`.  
 
+You can also run:
+
+```
+oc wait --for=condition=Available deploy/opendatahub-operator -n openshift-operators
+```
+
+Make sure you are in the `odh` project.  Once the operator is running, click on `Open Data Hub` under the Provided APIs.
+
+![ODH API](images/odh_api.png)
+
+Select `Create KfDef`.
+
+![ODH KfDef](images/odh_kfdef.png)
+
+Switch to the YAML view if you would like to see the underlying components.  We'll stick with the defaults and install.  Click `Create`.
+
+![ODH KfDef YAML](images/odh_kfdef_yaml.png)
+
+Wait until all the components are deployed and running:
+
+```
+oc get pods -n odh
+```
+
+> Output
+
+```
+NAME                                                          READY   STATUS      RESTARTS   AGE
+airflow-on-k8s-operator-controller-manager-557945bd5c-mkqz8   1/1     Running     0          4h48m
+argo-server-6dfb7f65f9-jbkbh                                  1/1     Running     0          4h48m
+grafana-deployment-db6c8989c-hrsxz                            1/1     Running     0          4h47m
+grafana-operator-69f449bf54-n7fq9                             1/1     Running     0          4h47m
+jupyterhub-1-deploy                                           0/1     Completed   0          4h48m
+jupyterhub-1-tcwvj                                            1/1     Running     0          4h47m
+jupyterhub-db-1-deploy                                        0/1     Completed   0          4h48m
+jupyterhub-db-1-wtmr9                                         1/1     Running     0          4h47m
+jupyterhub-nb-kube-3aadmin                                    2/2     Running     0          4h28m
+odh-dashboard-645579c66d-92jdg                                1/1     Running     0          4h47m
+odh-dashboard-645579c66d-hd6tg                                1/1     Running     0          4h47m
+odh-message-bus-entity-operator-6bfb9b9749-9mgxj              3/3     Running     0          5h20m
+odh-message-bus-kafka-0                                       2/2     Running     0          5h21m
+odh-message-bus-kafka-1                                       2/2     Running     0          5h21m
+odh-message-bus-kafka-2                                       2/2     Running     0          5h21m
+odh-message-bus-zookeeper-0                                   1/1     Running     0          5h22m
+odh-message-bus-zookeeper-1                                   1/1     Running     0          5h22m
+odh-message-bus-zookeeper-2                                   1/1     Running     0          5h22m
+prometheus-operator-7dbf9b587c-t7kdl                          1/1     Running     0          4h47m
+prometheus-prometheus-0                                       3/3     Running     1          4h47m
+seldon-controller-manager-7d9b7d5b87-h62ds                    1/1     Running     0          4h48m
+spark-operator-746dd44db5-pxk76                               1/1     Running     0          4h47m
+superset-1-bg792                                              1/1     Running     0          5h22m
+superset-1-deploy                                             0/1     Completed   0          5h22m
+workflow-controller-fc6b4dcff-mjhhs                           1/1     Running     0          4h48m
+```
+
+You can also view the ODH components you installed in the ODH dashboard.  Grab the public route and open it in your browser.
+
+```
+echo $(oc get route odh-dashboard -n odh --template='http://{{.spec.host}}')
+```
+
+You should see:
+
+![ODH Dashboard](images/odh_dashboard.png)
 
 ## Troubleshooting
 
