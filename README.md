@@ -94,6 +94,82 @@ You should see:
 
 ![ODH Dashboard](images/odh_dashboard.png)
 
+## Smoke Test
+
+Let's smoke test each component.
+
+### JupyterHub
+
+Launch JupyterHub from the ODH Dashboard.  Alternatively, you can grab the public route and open it in your browser.
+
+```
+echo $(oc get route jupyterhub -n odh --template='http://{{.spec.host}}')
+```
+
+Select the `s2i-spark-minimal-notebook` image and spawn the server.  Leave the other settings as they are.
+
+![JupyterHub Spawner](images/jupyterhub_spawner.png)
+
+Wait a few minutes for the server to start.
+
+> Try refreshing the browser if you don't see any progress after a couple minutes.
+
+Start a Python 3 notebook:
+
+![JupyterHub Start Notebook](images/jupyterhub_start_notebook.png)
+
+### Spark
+
+In the JupyterHub notebook, let's run a simple Spark application. 
+
+Copy this code and execute:
+
+```python
+from pyspark.sql import SparkSession, SQLContext
+import os
+
+# create a spark session
+spark_cluster_url = f"spark://{os.environ['SPARK_CLUSTER']}:7077"
+spark = SparkSession.builder.master(spark_cluster_url).getOrCreate()
+
+# test
+data = [1, 2, 3, 4, 5]
+distData = spark.sparkContext.parallelize(data)
+distData.reduce(lambda a, b: a + b)
+```
+
+> Output
+
+```
+15
+```
+
+### Seldon
+
+
+### Argo
+
+
+
+### Superset
+
+
+
+### Prometheus
+
+
+
+### Grafana
+
+
+### Kafka
+
+
+
+### Airflow
+
+
+
 ## Troubleshooting
 
 1.  If you delete the ODH operator and need to reinstall again, you have to make sure the operator group has been deleted.  Otherwise the next install will move into a stuck `Pending` state.
