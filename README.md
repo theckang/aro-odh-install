@@ -132,7 +132,7 @@ import os
 spark_cluster_url = f"spark://{os.environ['SPARK_CLUSTER']}:7077"
 spark = SparkSession.builder.master(spark_cluster_url).getOrCreate()
 
-# test
+# run a sample computation on the spark cluster
 data = [1, 2, 3, 4, 5]
 distData = spark.sparkContext.parallelize(data)
 distData.reduce(lambda a, b: a + b)
@@ -146,6 +146,48 @@ distData.reduce(lambda a, b: a + b)
 
 ### Seldon
 
+Let's test Seldon Core with a pre-packaged model.
+
+Deploy a pre-packaged model:
+
+```bash
+oc apply -f - << END
+apiVersion: machinelearning.seldon.io/v1
+kind: SeldonDeployment
+metadata:
+  name: iris-model
+spec:
+  name: iris
+  predictors:
+  - graph:
+      implementation: SKLEARN_SERVER
+      modelUri: gs://seldon-models/sklearn/iris
+      name: classifier
+    name: default
+    replicas: 1
+END
+```
+
+Wait until the model is ready:
+
+```bash
+oc wait --for=condition=Available deploy/iris-model-default-0-classifier
+```
+
+Expose the model with a public route:
+
+```bash
+oc expose svc iris-model-default
+```
+
+Send a sample request:
+
+```bash
+MODEL_URL=$(oc get route iris-model-default --template='http://{{.spec.host}}')
+curl -X POST $MODEL_URL/api/v1.0/predictions \
+    -H 'Content-Type: application/json' \
+    -d '{ "data": { "ndarray": [[1,2,3,4]] } }'
+```
 
 ### Argo
 
