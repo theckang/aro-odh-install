@@ -4,14 +4,15 @@ The purpose of this repo is to provide sample instructions for installing Open D
 
 ## Prerequisites
 
-* Azure Red Hat OpenShift 4
+* Azure Red Hat OpenShift 4 cluster
 * Admin access to OpenShift
+* [OpenShift CLI](https://docs.openshift.com/container-platform/4.6/cli_reference/openshift_cli/getting-started-cli.html)
 
 ## Prep
 
 Login to the cluster using `oc login` and admin credentials.
 
-Create a new project for ODH:
+Create a new project for ODH
 
 ```bash
 oc new-project odh
@@ -29,7 +30,7 @@ Navigate to OperatorHub and search for `Open Data Hub Operator`.  Install using 
 
 Under the install operators, you should see the status of the operator change to `Succeeded`.  
 
-You can also run:
+You can also run
 
 ```
 oc wait --for=condition=Available deploy/opendatahub-operator -n openshift-operators
@@ -39,7 +40,7 @@ Make sure you are in the `odh` project.  Once the operator is running, click on 
 
 ![ODH API](images/odh_api.png)
 
-Select `Create KfDef`.
+Select `Create KfDef`
 
 ![ODH KfDef](images/odh_kfdef.png)
 
@@ -47,7 +48,7 @@ Switch to the YAML view if you would like to see the underlying components.  We'
 
 ![ODH KfDef YAML](images/odh_kfdef_yaml.png)
 
-Wait until all the components are deployed and running:
+Wait until all the components are deployed and running
 
 ```
 oc get pods -n odh
@@ -122,7 +123,7 @@ Start a Python 3 notebook:
 
 In the JupyterHub notebook, let's run a simple Spark application. 
 
-Copy this code and execute:
+Copy this code and execute
 
 ```python
 from pyspark.sql import SparkSession, SQLContext
@@ -148,7 +149,7 @@ distData.reduce(lambda a, b: a + b)
 
 Let's test Seldon Core with a pre-packaged model.
 
-Deploy a pre-packaged model:
+Deploy a pre-packaged model
 
 ```bash
 oc apply -f - << END
@@ -168,19 +169,19 @@ spec:
 END
 ```
 
-Wait until the model is ready:
+Wait until the model is ready
 
 ```bash
 oc wait --for=condition=Available deploy/iris-model-default-0-classifier
 ```
 
-Expose the model with a public route:
+Expose the model with a public route
 
 ```bash
 oc expose svc iris-model-default
 ```
 
-Send a sample request:
+Send a sample request
 
 ```bash
 MODEL_URL=$(oc get route iris-model-default --template='http://{{.spec.host}}')
@@ -189,8 +190,100 @@ curl -X POST $MODEL_URL/api/v1.0/predictions \
     -d '{ "data": { "ndarray": [[1,2,3,4]] } }'
 ```
 
+> Output (sample)
+
+```
+{
+    "data": {
+        "names": [
+            "t:0",
+            "t:1",
+            "t:2"
+        ],
+        "ndarray": [
+            [
+                0.0006985194531162841,
+                0.003668039039435755,
+                0.9956334415074478
+            ]
+        ]
+    },
+    "meta": {}
+}
+```
+
 ### Argo
 
+Test Argo with a sample workflow.
+
+Create a workflow role
+
+```bash
+oc create -f - << END
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: workflow-role
+rules:
+# pod get/watch is used to identify the container IDs of the current pod
+# pod patch is used to annotate the step's outputs back to controller (e.g. artifact location)
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - get
+  - watch
+  - patch
+# logs get/watch are used to get the pods logs for script outputs, and for log archival
+- apiGroups:
+  - ""
+  resources:
+  - pods/log
+  verbs:
+  - get
+  - watch
+END
+```
+
+Bind the role to the default service account
+
+```bash
+oc adm policy add-role-to-user workflow-role -z default -n odh
+```
+
+Create the workflow
+
+```bash
+oc create -f https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-world.yaml
+```
+
+Look at the workflow
+
+```
+oc get workflow
+```
+
+> Output (sample)
+
+```
+NAME                STATUS      AGE
+hello-world-tx4mk   Succeeded   34s
+```
+
+You can also navigate to the Argo UI.
+
+```bash
+echo $(oc get route argo-portal -n odh --template='http://{{.spec.host}}')
+```
+
+Click on the hello world workflow and the green checkmark.  You will see:
+
+![Argo Workflow](images/argo_workflow.png)
+
+You can also view the logs to see the hello world whale:
+
+![Argo Workflow Log](images/argo_workflow_log.png)
 
 
 ### Superset
@@ -214,8 +307,15 @@ curl -X POST $MODEL_URL/api/v1.0/predictions \
 
 ## Troubleshooting
 
-1.  If you delete the ODH operator and need to reinstall again, you have to make sure the operator group has been deleted.  Otherwise the next install will move into a stuck `Pending` state.
+1.  If you delete the ODH operator and need to reinstall again, you have to manually delete the old operator group.  Otherwise the next install will move into a stuck `Pending` state.
 
 ```
 oc delete operatorgroup opendatahub -n openshift-operators
 ```
+
+2.  If you run the sample Argo workflow without binding the workflow role, you will get this error (see [issue](https://github.com/argoproj/argo/issues/2522)).
+
+```
+failed to save outputs: Failed to establish pod watch: unknown (get pods)
+```
+
