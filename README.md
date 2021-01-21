@@ -288,14 +288,42 @@ You can also view the logs to see the hello world whale:
 
 ### Superset
 
+[Follow these steps](https://gitlab.com/opendatahub/opendatahub-operator/-/blob/master/docs/deploying-superset.adoc) to test Superset with PostgreSQL.
 
 
 ### Prometheus
 
+Let's add alert rules for our Kafka cluster.
 
+```bash
+oc create -f https://raw.githubusercontent.com/strimzi/strimzi-kafka-operator/master/examples/metrics/prometheus-install/prometheus-rules.yaml
+```
+
+Launch Prometheus from the ODH Dashboard.  Alternatively, you can grab the public route and open it in your browser.
+
+```
+echo $(oc get route prometheus-portal -n odh --template='http://{{.spec.host}}')
+```
+
+Navigate to `Alerts` at the top.  You should see your new alert rules.
+
+![Prometheus Alerts](images/prometheus_alerts.png)
 
 ### Grafana
 
+Launch Grafana from the ODH Dashboard.  Alternatively, you can grab the public route and open it in your browser.
+
+```
+echo $(oc get route grafana-route -n odh --template='https://{{.spec.host}}')
+```
+
+Click the square icon on the left to see `Dashboards` and select `Manage`.
+
+Open the `odh` folder and you should see two dashboards:
+
+![Grafana Dashboards](images/grafana_dashboard.png)
+
+Open `Kafka Overview` and you should see information about your Kafka cluster.
 
 ### Kafka
 
