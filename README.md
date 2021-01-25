@@ -327,34 +327,32 @@ Open `Kafka Overview` and you should see information about your Kafka cluster.
 
 ### Kafka
 
-Create a sample Kafka cluster
+Create a sample topic in the ODH Kafka cluster
 
-```
-oc create -f https://raw.githubusercontent.com/theckang/openshift-kafka-demo/main/kafka/my-cluster.yaml
-```
-
-Wait for the cluster to create
-
-```
-oc wait kafka/my-cluster --for=condition=Ready --timeout=300s
-```
-
-Create a sample topic
-
-```
-oc create -f https://raw.githubusercontent.com/theckang/openshift-kafka-demo/main/kafka/my-topic.yaml
+```bash
+oc create -f - << END
+apiVersion: kafka.strimzi.io/v1beta1
+kind: KafkaTopic
+metadata:
+  name: odh-topic
+  labels:
+    strimzi.io/cluster: odh-message-bus
+spec:
+  partitions: 3
+  replicas: 3
+END
 ```
 
 Start a Kafka consumer
 
 ```
-oc run kafka-consumer -ti --image=registry.redhat.io/amq7/amq-streams-kafka-25-rhel7:1.5.0 --rm=true --restart=Never -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka-bootstrap:9092 --topic my-topic --from-beginning
+oc run kafka-consumer -ti --image=registry.redhat.io/amq7/amq-streams-kafka-25-rhel7:1.5.0 --rm=true --restart=Never -- bin/kafka-console-consumer.sh --bootstrap-server odh-message-bus-kafka-bootstrap:9092 --topic odh-topic --from-beginning
 ```
 
 In another terminal, start a Kafka producer
 
 ```
-oc run kafka-producer -ti --image=registry.redhat.io/amq7/amq-streams-kafka-25-rhel7:1.5.0 --rm=true --restart=Never -- bin/kafka-console-producer.sh --broker-list my-cluster-kafka-bootstrap:9092 --topic my-topic 
+oc run kafka-producer -ti --image=registry.redhat.io/amq7/amq-streams-kafka-25-rhel7:1.5.0 --rm=true --restart=Never -- bin/kafka-console-producer.sh --broker-list odh-message-bus-kafka-bootstrap:9092 --topic odh-topic 
 ```
 
 Send messages through the Kafka producer.  The messages should show up in the consumer terminal.
