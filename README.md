@@ -361,7 +361,33 @@ Send messages through the Kafka producer.  The messages should show up in the co
 
 ### Airflow
 
+Create Airflow stateful component
 
+```
+oc create -f https://raw.githubusercontent.com/opendatahub-io/airflow-on-k8s-operator/openshift/hack/sample/postgres-celery/base.yaml
+```
+
+Wait until the base component is ready
+
+```
+oc get statefulset/pc-base-postgres
+```
+
+Create Airflow cluster
+
+```
+oc create -f https://raw.githubusercontent.com/opendatahub-io/airflow-on-k8s-operator/openshift/hack/sample/postgres-celery/cluster.yaml
+```
+
+Open the route to Airflow in your browser
+
+```
+echo $(oc get route pc-cluster-airflowui --template='http://{{.spec.host}}')
+```
+
+Trigger the `tutorial` DAG and you should see the tasks transition to `success` over time:
+
+![Airflow DAG](images/airflow_dag.png)
 
 
 ## Troubleshooting
