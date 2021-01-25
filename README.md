@@ -327,9 +327,40 @@ Open `Kafka Overview` and you should see information about your Kafka cluster.
 
 ### Kafka
 
+Create a sample Kafka cluster
 
+```
+oc create -f https://raw.githubusercontent.com/theckang/openshift-kafka-demo/main/kafka/my-cluster.yaml
+```
+
+Wait for the cluster to create
+
+```
+oc wait kafka/my-cluster --for=condition=Ready --timeout=300s
+```
+
+Create a sample topic
+
+```
+oc create -f https://raw.githubusercontent.com/theckang/openshift-kafka-demo/main/kafka/my-topic.yaml
+```
+
+Start a Kafka consumer
+
+```
+oc run kafka-consumer -ti --image=registry.redhat.io/amq7/amq-streams-kafka-25-rhel7:1.5.0 --rm=true --restart=Never -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka-bootstrap:9092 --topic my-topic --from-beginning
+```
+
+In another terminal, start a Kafka producer
+
+```
+oc run kafka-producer -ti --image=registry.redhat.io/amq7/amq-streams-kafka-25-rhel7:1.5.0 --rm=true --restart=Never -- bin/kafka-console-producer.sh --broker-list my-cluster-kafka-bootstrap:9092 --topic my-topic 
+```
+
+Send messages through the Kafka producer.  The messages should show up in the consumer terminal.
 
 ### Airflow
+
 
 
 
